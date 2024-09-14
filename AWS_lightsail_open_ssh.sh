@@ -9,6 +9,14 @@ sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 # 修改 PasswordAuthentication 行，去掉井号并设置为 PasswordAuthentication yes
 sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
+# 查找 /etc/ssh/sshd_config.d 文件夹中以 cloudimg-settings.conf 结尾的文件，并修改 PasswordAuthentication no 为 PasswordAuthentication yes
+for conf_file in /etc/ssh/sshd_config.d/*cloudimg-settings.conf; do
+    if [ -f "$conf_file" ]; then
+        sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' "$conf_file"
+        echo "$conf_file 中的 PasswordAuthentication 已修改为 yes"
+    fi
+done
+
 # 重启 SSH 服务以应用更改
 systemctl restart sshd
 
