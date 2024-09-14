@@ -15,3 +15,8 @@ curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/AWS_lightsai
 ```sh
 curl -fsSL https://github.com/lzy-Jolly/kai_ssh/blob/main/AWS_lightsail_root_key_login.sh | sudo bash
 ```
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/blob/main/AWS_lightsail_root_key_login.sh | sudo bash
+
+```
