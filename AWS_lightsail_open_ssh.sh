@@ -21,3 +21,5 @@ done
 systemctl restart sshd
 
 echo "sshd_config 文件已修改并重启 SSH 服务。"
+echo "请用  sudo -i 进入root账户"
+echo "再用  passwd 重置密码"
