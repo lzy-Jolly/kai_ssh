@@ -13,5 +13,5 @@ curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/AWS_lightsai
 用Root登入，用官方的ubuntu密钥对
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/blob/main/AWS_lightsail_root_key_login.sh | sudo bash
+curl -fsSL https://github.com/lzy-Jolly/kai_ssh/blob/main/AWS_lightsail_root_key_login.sh | sudo bash
 ```
