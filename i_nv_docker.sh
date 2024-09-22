@@ -1,10 +1,4 @@
 #!/bin/bash
-# update a script for ubuntu22 auto install docker
-# 自动安装docker脚本，并安装nvidia-docker。
-# 注意！需要有良好的外网环境，教程来自下列两个网址
-# https://docs.docker.com/engine/install/ubuntu/
-# https://blog.csdn.net/qq_41776453/article/details/129794608
-
 
 # 移除已有的Docker相关软件包
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
@@ -75,4 +69,16 @@ if [ $countdown -eq 0 ]; then
 fi
 
 # 添加NVIDIA Docker GPG密钥及仓库
-distribution=$(. /
+distribution=$(. /etc/os-release; echo $ID$VERSION_ID) \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+   sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+# 更新Apt并安装nvidia-docker2
+sudo apt update
+sudo apt install -y nvidia-docker2
+
+# 重启Docker以使更改生效
+sudo systemctl restart docker
+
+echo "Docker和NVIDIA Docker安装完成。"
