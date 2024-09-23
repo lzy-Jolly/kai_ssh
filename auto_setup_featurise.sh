@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # 复制所有文件从 /home/featurize/work 到 /home/featurize
-cp /home/featurize/work/* /home/featurize/
+cp -r /home/featurize/work/* /home/featurize/
 
 # 检查是否成功复制了 pcd_jolly_1.1.tar
 if [ -f "/home/featurize/pcd_jolly_1.1.tar" ]; then
