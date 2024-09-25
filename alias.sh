@@ -6,5 +6,5 @@ alias bspcd="docker exec -it pcd /bin/bash"
 alias jy="tar -xvzf"
 
 # 立即使修改生效
-source ~/.bashrc
+# source ~/.bashrc
 echo "All aliases added and bashrc reloaded!"
