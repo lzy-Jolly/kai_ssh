@@ -1,5 +1,4 @@
 
-#!/bin/bash
 
 # 复制所有文件从 /home/featurize/work 到 /home/featurize
 # cp -r /home/featurize/work/* /home/featurize/
