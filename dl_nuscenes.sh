@@ -9,6 +9,9 @@ time_elapsed() {
     printf "Elapsed time: %02d:%02d:%02d\n" $hours $minutes $seconds
 }
 
+# 记录整个脚本的开始时间
+total_start_time=$(date +%s)
+
 # 创建目录并进入
 mkdir -p /home/featurize/data/tmp
 cd /home/featurize/data/tmp
@@ -62,4 +65,14 @@ echo "Time for third dataset:"
 time_elapsed $elapsed
 
 # ------------------------------------------------------------------------#
+# 计算并输出总的运行时间
+total_end_time=$(date +%s)
+total_elapsed=$(( total_end_time - total_start_time ))
+
+echo "Total time for all datasets:"
+time_elapsed $total_elapsed
+
 echo "All datasets have been processed."
+
+# 重定向所有输出到 dl_nuscenes.log 文件
+} | tee dl_nuscenes.log
