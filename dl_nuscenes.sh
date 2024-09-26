@@ -15,6 +15,8 @@ total_start_time=$(date +%s)
 # 创建目录并进入
 mkdir -p /home/featurize/data/tmp
 mkdir -p /home/featurize/data/nuscenes/v1.0-trainval/
+mkdir -p /home/featurize/data/nuscenes_test/
+
 cd /home/featurize/data/tmp
 
 start_time=$(date +%s)
