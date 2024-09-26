@@ -17,7 +17,7 @@
 #!/bin/bash
 
 # 复制除了 cuda_11.6.2.tar 以外的所有文件和文件夹从 /home/featurize/work 到 /home/featurize
-rsync -av --exclude='cuda_11.6.2.tar' /home/featurize/work/ /home/featurize/
+rsync -avzP --exclude='cuda_11.6.2.tar' /home/featurize/work/ /home/featurize/
 
 # 检查是否成功复制了 pcd_jolly_1.1.tar
 if [ -f "/home/featurize/pcd_jolly_1.1.tar" ]; then
