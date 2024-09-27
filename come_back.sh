@@ -1,22 +1,23 @@
 #!/bin/bash
-# come_back.sh folderB.b
-# 检查输入参数
-if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 -folderB.b"
-  exit 1
+
+# 检查输入参数是否为1个
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 backup_folder"
+    exit 1
 fi
 
-backupFolder=$1
+# 定义备份文件夹
+backup_folder="$1"
 
-# 检查备份文件夹是否存在
-if [[ ! -d "$backupFolder" ]]; then
-  echo "Error: Backup folder ($backupFolder) does not exist!"
-  exit 1
+# 判断备份文件夹是否存在
+if [ ! -d "$backup_folder" ]; then
+    echo "Backup folder $backup_folder not found!"
+    exit 1
 fi
 
-# 提取原始文件夹路径
-originalFolder="${backupFolder%.b}"
+# 确定恢复的目标文件夹名称
+target_folder="${backup_folder%.b}"
 
-# 从备份文件夹中恢复文件
-cp -r "$backupFolder/." "$originalFolder"
-echo "Restored files from $backupFolder to $originalFolder."
+# 复制备份文件到原目录
+cp -r "$backup_folder"/* "$target_folder"
+echo "Restored $target_folder from $backup_folder"
