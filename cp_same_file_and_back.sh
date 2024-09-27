@@ -6,12 +6,12 @@ if [ "$#" -ne 3 ]; then
     exit 1
 fi
 
-# 定义输入的文件夹和文件
-folderA="$1"
-folderB="$2"
+# 定义输入的文件夹和文件，并去除末尾的斜杠
+folderA=$(echo "$1" | sed 's:/*$::')
+folderB=$(echo "$2" | sed 's:/*$::')
 comm_file="$3"
 
-# 创建 folderB 的备份文件夹
+# 创建 folderB 的备份文件夹 (去除斜杠后的名字)
 backup_folder="${folderB}.b"
 
 # 如果备份文件夹已经存在，则警告用户
