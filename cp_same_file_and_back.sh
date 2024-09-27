@@ -1,41 +1,53 @@
 #!/bin/bash
 # cp_same_file_and_back.sh -folderA -folderB -comm.txt
-# 文件comm.txt中列出了一些列子文件，请在A中寻找并将其复制到B对应位置的，并将被覆盖的源文件保存末尾加上.b作为备份。
-# 检查输入参数是否正确
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 -folderA -folderB -comm.txt"
-    exit 1
+# 检查输入参数
+if [[ $# -ne 3 ]]; then
+  echo "Usage: $0 -folderA -folderB -comm.txt"
+  exit 1
 fi
 
 folderA=$1
 folderB=$2
-comm_file=$3
+commFile=$3
 
-# 检查文件是否存在
-if [ ! -d "$folderA" ] || [ ! -d "$folderB" ] || [ ! -f "$comm_file" ]; then
-    echo "Folder or file does not exist!"
-    exit 1
+# 检查文件和文件夹是否存在
+if [[ ! -d "$folderA" ]]; then
+  echo "Error: Folder A ($folderA) does not exist!"
+  exit 1
 fi
 
-# 读取 comm.txt 中的文件路径列表
-while IFS= read -r file_path; do
-    src_file="$folderA/$file_path"
-    dest_file="$folderB/$file_path"
+if [[ ! -d "$folderB" ]]; then
+  echo "Error: Folder B ($folderB) does not exist!"
+  exit 1
+fi
 
-    # 检查源文件是否存在
-    if [ -f "$src_file" ]; then
-        # 创建目标目录
-        mkdir -p "$(dirname "$dest_file")"
+if [[ ! -f "$commFile" ]]; then
+  echo "Error: Comm file ($commFile) does not exist!"
+  exit 1
+fi
 
-        # 如果目标文件存在，则进行备份
-        if [ -f "$dest_file" ]; then
-            cp "$dest_file" "$dest_file.b"
-        fi
+# 创建备份文件夹并备份folderB
+backupFolder="$folderB.b"
+if [[ -d "$backupFolder" ]]; then
+  echo "Warning: Backup folder ($backupFolder) already exists. Overwriting."
+else
+  cp -r "$folderB" "$backupFolder"
+  echo "Backup folder ($backupFolder) created."
+fi
 
-        # 复制源文件到目标文件
-        cp "$src_file" "$dest_file"
-        echo "Copied $src_file to $dest_file"
-    else
-        echo "Source file $src_file does not exist!"
-    fi
-done < "$comm_file"
+# 读取 comm.txt 文件中的路径，并进行覆盖
+while IFS= read -r line; do
+  if [[ -f "$folderA/$line" ]]; then
+    # 创建目标文件所在的文件夹路径
+    targetDir=$(dirname "$folderB/$line")
+    mkdir -p "$targetDir"
+
+    # 将 A 文件夹中的文件复制到 B 中覆盖对应文件
+    cp "$folderA/$line" "$folderB/$line"
+    echo "Copied $folderA/$line to $folderB/$line"
+  else
+    echo "Warning: File $folderA/$line does not exist. Skipping."
+  fi
+done < "$commFile"
+
+echo "All specified files have been copied from $folderA to $folderB."
