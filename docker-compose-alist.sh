@@ -24,3 +24,4 @@ docker compose -f alist.yml up -d
 # 输出结果信息
 echo "端口映射为 - '5233:5244'"
 echo "卷映射 - '/root/jolly/dockerD/alist-data:/database'"
+echo "重新生成随机密码命令： docker exec -it alist ./alist admin random"
