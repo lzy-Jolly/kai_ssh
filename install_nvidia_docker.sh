@@ -39,7 +39,7 @@ trap "echo '安装完成，跳过nvidia-docker安装'; sudo systemctl enable doc
 
 # 开始倒计时
 while [ $countdown -gt 0 ]; do
-    echo -n "倒计时 $countdown 秒... 按任意键暂停。"
+    echo -n "倒计时 $countdown 秒... 按enter暂停。"
     
     # 等待 1 秒，期间检测是否有键盘输入
     read -t 1 -n 1 input
