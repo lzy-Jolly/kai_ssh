@@ -10,7 +10,7 @@ services:
             - '/etc/alist:/opt/alist/data'
             - '/root/jolly/dockerD/alist-data:/database' 
         ports:
-            - '5233:5244'
+            - '5244:5244'
         environment:
             - PUID=0
             - PGID=0
