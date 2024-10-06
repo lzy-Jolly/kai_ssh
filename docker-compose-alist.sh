@@ -19,7 +19,7 @@ services:
 EOF
 
 # 使用docker-compose启动alist服务
-docker-compose -f alist.yml up -d
+docker compose -f alist.yml up -d
 
 # 输出结果信息
 echo "端口映射为 - '5233:5244'"
