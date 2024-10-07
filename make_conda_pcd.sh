@@ -4,7 +4,7 @@
 set -e
 
 # 检查是否安装了 conda
-if ! command -v conda &> /dev/null
+if ! type "conda" &> /dev/null
 then
     echo "未找到 conda，请先安装 Anaconda 或 Miniconda。"
     exit
