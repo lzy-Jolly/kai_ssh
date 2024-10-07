@@ -61,12 +61,8 @@ while [ $countdown -gt 0 ]; do
     countdown=$((countdown - 1))
 done
 
-if [ $countdown -eq 0 ]; then
-    echo "跳过nvidia-docker安装，完成Docker设置。"
-    sudo systemctl enable docker
-    sudo systemctl restart docker
-    exit 0
-fi
+# 如果倒计时结束，自动继续安装nvidia-docker
+echo "倒计时结束，继续安装nvidia-docker..."
 
 # 添加NVIDIA Docker GPG密钥及仓库
 distribution=$(. /etc/os-release; echo $ID$VERSION_ID) \
@@ -79,6 +75,7 @@ sudo apt update
 sudo apt install -y nvidia-docker2
 
 # 重启Docker以使更改生效
+sudo systemctl enable docker
 sudo systemctl restart docker
 
 echo "Docker和NVIDIA Docker安装完成。"
