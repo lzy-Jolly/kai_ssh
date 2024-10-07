@@ -20,11 +20,11 @@ curl -fsSL https://github.com/lzy-Jolly/kai_ssh/blob/main/AWS_lightsail_root_key
 curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/blob/main/AWS_lightsail_root_key_login.sh | sudo bash
 
 ```
-# 下载安装docker，以及nvidia-docker
+### 下载安装docker，以及nvidia-docker
 ```sh
 curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/istall_nvidia_docker.sh | sudo bash
 ```
-# 用docker 部署alist
+### 用docker 部署alist
 ```sh
 curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/docker-compose-alist.sh | sudo bash
 ```
