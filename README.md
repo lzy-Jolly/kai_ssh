@@ -29,4 +29,9 @@ curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/i
 curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/docker-compose-alist.sh | sudo bash
 ```
 
+### 国内clash下载地址
+```sh
+git clone https://gitee.com/lzy_jolly/script_repo.git
+```
+
 
