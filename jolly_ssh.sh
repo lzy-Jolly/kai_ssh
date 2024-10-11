@@ -10,8 +10,10 @@ LOCAL_KEY_FILE="$LOCAL_KEY_DIR/remote1.pub"
 # 检查系统是否支持 sudo，如果支持则使用 sudo，否则使用普通权限
 if command -v sudo &> /dev/null; then
   SUDO_CMD="sudo"
+  echo "featurize"
 else
   SUDO_CMD=""
+  echo "Funhpc"
 fi
 
 # 创建本地密钥存储目录
