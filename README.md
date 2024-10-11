@@ -35,7 +35,8 @@ git clone https://gitee.com/lzy_jolly/script_repo.git
 ```
 ### jolly_ssh.sh
 ```sh
-curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/jolly_ssh.sh | sudo bash
+wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/jolly_ssh.sh -O jolly_ssh.sh && sudo bash jolly_ssh.sh
+
 ```
 ```sh
 curl -fsSL https://github.com/lzy-Jolly/kai_ssh/blob/main/main/jolly_ssh.sh | sudo bash
