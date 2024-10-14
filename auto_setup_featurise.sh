@@ -1,54 +1,73 @@
 #!/bin/bash
 
-# 定义函数来记录执行时间
-execute_and_time() {
-    local start_time=$(date +%s)
-    echo "开始执行: $1"
-    eval "$1"
-    local end_time=$(date +%s)
-    local elapsed_time=$((end_time - start_time))
-    echo "执行完成: $1, 耗时: $elapsed_time 秒"
+# Function to print time taken
+function print_time_taken() {
+    local start_time=$1
+    local end_time=$2
+    local step_name=$3
+    local elapsed_time=$(echo "$end_time - $start_time" | bc)
+    echo "Step $step_name took: $elapsed_time seconds"
 }
 
-# 执行A
-cmd_A="mkdir -p ~/data/nuscenes/v1.0-trainval && sudo apt update && sudo apt install -y nvtop tree pigz pv"
-execute_and_time "$cmd_A" &  # 使用 & 后台执行
+# A: 创建目录并安装软件
+start_time=$(date +%s.%N)
+mkdir -p ~/data/nuscenes/v1.0-trainval
+sudo apt update && sudo apt install -y nvtop tree pigz pv
+end_time=$(date +%s.%N)
+print_time_taken $start_time $end_time "A"
 
-# 执行B
-cmd_B="cd ~/data/nuscenes/v1.0-trainval && featurize dataset extract 4ec7e5bb-e900-448c-a286-42a1039cb7ac && \
-featurize dataset extract 8dfff36b-e9da-46fb-9386-3cb6d2b00fdd && \
-featurize dataset extract f9b75b02-d3b0-4ea2-987a-e7b133ed3780 && \
-featurize dataset extract 636f14f1-a045-4fef-8b67-ef4e0f6fabf7 && \
-featurize dataset extract e0f18708-b871-42ed-9659-140077b94983"
-execute_and_time "$cmd_B" &  # 使用 & 后台执行
+# B: 进入目录并逐行执行 featurize 操作，记录每次操作的时间
+cd ~/data/nuscenes/v1.0-trainval
 
-# 执行C
-cmd_C="cd ~/work && sudo docker load -i pcd.yes.tar && cp -r ~/work/nuscenes_loaded_pkl ~/data/"
-execute_and_time "$cmd_C" &  # 使用 & 后台执行
+declare -a featurize_commands=(
+    "featurize dataset extract 4ec7e5bb-e900-448c-a286-42a1039cb7ac"
+    "featurize dataset extract 8dfff36b-e9da-46fb-9386-3cb6d2b00fdd"
+    "featurize dataset extract f9b75b02-d3b0-4ea2-987a-e7b133ed3780"
+    "featurize dataset extract 636f14f1-a045-4fef-8b67-ef4e0f6fabf7"
+    "featurize dataset extract e0f18708-b871-42ed-9659-140077b94983"
+)
 
-# 等待A、B、C执行完
-wait
-echo "ABC全部执行完毕"
+for i in "${!featurize_commands[@]}"; do
+    start_time=$(date +%s.%N)
+    ${featurize_commands[$i]}
+    end_time=$(date +%s.%N)
+    print_time_taken $start_time $end_time "B${i+1}"
+done
 
-# # 执行D
-# cmd_D="docker run -it --name cu115 --restart unless-stopped -e SDL_VIDEODRIVER=x11 -e DISPLAY=$DISPLAY \
-# --env='DISPLAY' --gpus all --ipc host --privileged -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-# -v /media/its:/mnt/data -v /home/featurize/data:/root/dataset \
-# lzyjolly/pcd_u20c11:1.6.yes /bin/bash"
-# execute_and_time "$cmd_D"
+# C: 进入工作目录并加载镜像
+start_time=$(date +%s.%N)
+cd ~/work
+sudo docker load -i pcd.yes.tar
+cp -r ~/work/nuscenes_loaded_pkl ~/data/
+end_time=$(date +%s.%N)
+print_time_taken $start_time $end_time "C"
 
-# # 执行E
-# cmd_E="cd /root/pc-corrector && python -m pcdet.datasets.nuscenes.nuscenes_dataset --func create_nuscenes_infos \
-# --cfg_file tools/cfgs/dataset_configs/nuscenes_dataset.yaml --version v1.0-trainval"
-# execute_and_time "$cmd_E"
+# D: 运行 Docker 容器
+start_time=$(date +%s.%N)
+docker run -it \
+--name cu115 \
+--restart unless-stopped \
+-e SDL_VIDEODRIVER=x11 \
+-e DISPLAY=$DISPLAY \
+--env='DISPLAY' \
+--gpus all \
+--ipc host \
+--privileged \
+-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+-v /media/its:/mnt/data \
+-v /home/featurize/data:/root/dataset \
+lzyjolly/pcd_u20c11:1.6.yes \
+/bin/bash
+end_time=$(date +%s.%N)
+print_time_taken $start_time $end_time "D"
 
-
-cmd_D="docker run --name cu115 --restart unless-stopped -e SDL_VIDEODRIVER=x11 -e DISPLAY=$DISPLAY \
---env='DISPLAY' --gpus all --ipc host --privileged -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
--v /media/its:/mnt/data -v /home/featurize/data:/root/dataset \
-lzyjolly/pcd_u20c11:1.6.yes /bin/bash -c 'echo Inside Docker && cd /root/pc-corrector && \
+# E: 执行 Python 脚本创建 nuscenes 信息
+start_time=$(date +%s.%N)
+cd /root/pc-corrector
 python -m pcdet.datasets.nuscenes.nuscenes_dataset --func create_nuscenes_infos \
---cfg_file tools/cfgs/dataset_configs/nuscenes_dataset.yaml --version v1.0-trainval && exit'"
-execute_and_time "$cmd_D"
+    --cfg_file tools/cfgs/dataset_configs/nuscenes_dataset.yaml \
+    --version v1.0-trainval
+end_time=$(date +%s.%N)
+print_time_taken $start_time $end_time "E"
 
-echo "所有步骤执行完毕"
+echo "All steps completed!"
