@@ -1,6 +1,6 @@
 # kai_ssh
 ```sh
-git glone https://github.com/lzy-Jolly/kai_ssh.git
+git clone https://github.com/lzy-Jolly/kai_ssh.git
 ```
 
 open ssh for many online service
