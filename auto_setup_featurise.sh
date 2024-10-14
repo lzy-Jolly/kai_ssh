@@ -18,7 +18,7 @@ echo "开始执行自动化任务" > auto_featurize.log
 # A: 创建目录并安装软件
 start_time=$(date +%s.%N)
 echo "A: 正在创建目录并安装所需软件..." | tee -a auto_featurize.log
-mkdir -p ~/data/nuscenes/v1.0-trainval
+sudo mkdir -p ~/data/nuscenes/v1.0-trainval
 sudo apt update && sudo apt install -y nvtop tree pigz pv
 end_time=$(date +%s.%N)
 print_time_taken $start_time $end_time "A"
@@ -28,11 +28,11 @@ cd ~/data/nuscenes/v1.0-trainval
 echo "B: 进入目录并逐行执行 featurize 操作..." | tee -a auto_featurize.log
 
 declare -a featurize_commands=(
-    "featurize dataset extract 4ec7e5bb-e900-448c-a286-42a1039cb7ac"
-    "featurize dataset extract 8dfff36b-e9da-46fb-9386-3cb6d2b00fdd"
-    "featurize dataset extract f9b75b02-d3b0-4ea2-987a-e7b133ed3780"
-    "featurize dataset extract 636f14f1-a045-4fef-8b67-ef4e0f6fabf7"
-    "featurize dataset extract e0f18708-b871-42ed-9659-140077b94983"
+    "sudo featurize dataset extract 4ec7e5bb-e900-448c-a286-42a1039cb7ac"
+    "sudo featurize dataset extract 8dfff36b-e9da-46fb-9386-3cb6d2b00fdd"
+    "sudo featurize dataset extract f9b75b02-d3b0-4ea2-987a-e7b133ed3780"
+    "sudo featurize dataset extract 636f14f1-a045-4fef-8b67-ef4e0f6fabf7"
+    "sudo featurize dataset extract e0f18708-b871-42ed-9659-140077b94983"
 )
 
 for i in "${!featurize_commands[@]}"; do
