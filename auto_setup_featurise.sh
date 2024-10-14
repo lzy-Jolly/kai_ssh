@@ -1,37 +1,54 @@
 #!/bin/bash
 
-# 定义函数记录时间
-time_elapsed() {
-    start=$1
-    end=$2
-    elapsed=$(( end - start ))
-    echo "Elapsed time: $elapsed seconds"
+# 定义函数来记录执行时间
+execute_and_time() {
+    local start_time=$(date +%s)
+    echo "开始执行: $1"
+    eval "$1"
+    local end_time=$(date +%s)
+    local elapsed_time=$((end_time - start_time))
+    echo "执行完成: $1, 耗时: $elapsed_time 秒"
 }
 
-# 记录第一个活动开始时间
-start_time_activity_1=$(date +%s)
+# 执行A
+cmd_A="mkdir -p ~/data/nuscenes/v1.0-trainval && sudo apt update && sudo apt install -y nvtop tree pigz pv"
+execute_and_time "$cmd_A" &  # 使用 & 后台执行
 
-# 第一个活动: 复制除了 cuda_11.6.2.tar 以外的所有文件和文件夹从 /home/featurize/work 到 /home/featurize
-rsync -avzP --exclude='cuda_11.6.2.tar' /home/featurize/work/ /home/featurize/
+# 执行B
+cmd_B="cd ~/data/nuscenes/v1.0-trainval && featurize dataset extract 4ec7e5bb-e900-448c-a286-42a1039cb7ac && \
+featurize dataset extract 8dfff36b-e9da-46fb-9386-3cb6d2b00fdd && \
+featurize dataset extract f9b75b02-d3b0-4ea2-987a-e7b133ed3780 && \
+featurize dataset extract 636f14f1-a045-4fef-8b67-ef4e0f6fabf7 && \
+featurize dataset extract e0f18708-b871-42ed-9659-140077b94983"
+execute_and_time "$cmd_B" &  # 使用 & 后台执行
 
-# 记录第一个活动结束时间并计算时间
-end_time_activity_1=$(date +%s)
-echo "Time for rsync activity:"
-time_elapsed $start_time_activity_1 $end_time_activity_1
+# 执行C
+cmd_C="cd ~/work && sudo docker load -i pcd.yes.tar && cp -r ~/work/nuscenes_loaded_pkl ~/data/"
+execute_and_time "$cmd_C" &  # 使用 & 后台执行
 
-# 记录第二个活动开始时间
-start_time_activity_2=$(date +%s)
+# 等待A、B、C执行完
+wait
+echo "ABC全部执行完毕"
 
-# 第二个活动: 检查是否成功复制了 pcd.1.5.tar 并加载到 Docker
-if [ -f "/home/featurize/pcd.1.5.tar" ]; then
-    echo "pcd.1.5.tar found. Loading into Docker..."
-    docker load -i /home/featurize/pcd.1.5.tar
-    echo "Docker image loaded successfully."
-else
-    echo "Error: pcd.1.5.tar not found."
-fi
+# # 执行D
+# cmd_D="docker run -it --name cu115 --restart unless-stopped -e SDL_VIDEODRIVER=x11 -e DISPLAY=$DISPLAY \
+# --env='DISPLAY' --gpus all --ipc host --privileged -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+# -v /media/its:/mnt/data -v /home/featurize/data:/root/dataset \
+# lzyjolly/pcd_u20c11:1.6.yes /bin/bash"
+# execute_and_time "$cmd_D"
 
-# 记录第二个活动结束时间并计算时间
-end_time_activity_2=$(date +%s)
-echo "Time for Docker load activity:"
-time_elapsed $start_time_activity_2 $end_time_activity_2
+# # 执行E
+# cmd_E="cd /root/pc-corrector && python -m pcdet.datasets.nuscenes.nuscenes_dataset --func create_nuscenes_infos \
+# --cfg_file tools/cfgs/dataset_configs/nuscenes_dataset.yaml --version v1.0-trainval"
+# execute_and_time "$cmd_E"
+
+
+cmd_D="docker run --name cu115 --restart unless-stopped -e SDL_VIDEODRIVER=x11 -e DISPLAY=$DISPLAY \
+--env='DISPLAY' --gpus all --ipc host --privileged -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+-v /media/its:/mnt/data -v /home/featurize/data:/root/dataset \
+lzyjolly/pcd_u20c11:1.6.yes /bin/bash -c 'echo Inside Docker && cd /root/pc-corrector && \
+python -m pcdet.datasets.nuscenes.nuscenes_dataset --func create_nuscenes_infos \
+--cfg_file tools/cfgs/dataset_configs/nuscenes_dataset.yaml --version v1.0-trainval && exit'"
+execute_and_time "$cmd_D"
+
+echo "所有步骤执行完毕"
