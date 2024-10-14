@@ -56,7 +56,7 @@ print_time_taken $start_time $end_time "C"
 start_time=$(date +%s.%N)
 echo "D: 正在运行 Docker 容器并执行 Python 脚本..." | tee -a auto_featurize.log
 docker run \
---name cu115 \
+--name cu116 \
 --restart unless-stopped \
 -e SDL_VIDEODRIVER=x11 \
 -e DISPLAY=$DISPLAY \
@@ -130,7 +130,7 @@ echo "所有步骤已完成！" | tee -a auto_featurize.log
 # # D: 运行 Docker 容器
 # start_time=$(date +%s.%N)
 # docker run -it \
-# --name cu115 \
+# --name cu\
 # --restart unless-stopped \
 # -e SDL_VIDEODRIVER=x11 \
 # -e DISPLAY=$DISPLAY \
