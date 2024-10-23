@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/AWS_lightsai
 ```
 ### 甲骨文root解锁
 ```sh
-wget -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/oracle-scripts.sh 
+wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/oracle-scripts.sh 
 ```
 也可以，打开"AWS_lightsail_open_ssh.sh"
 
