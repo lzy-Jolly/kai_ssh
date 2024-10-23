@@ -16,6 +16,10 @@ AWS
 curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/AWS_lightsail_open_ssh.sh | sudo bash
 
 ```
+### 甲骨文root解锁
+'''sh
+wget -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/oracle-scripts.sh 
+'''
 也可以，打开"AWS_lightsail_open_ssh.sh"
 
 用Root登入，用官方的ubuntu密钥对--暂时有bug不行，
