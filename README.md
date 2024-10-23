@@ -33,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/blob/main/AWS_lig
 ```
 ### 下载安装docker，以及nvidia-docker
 ```sh
-wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/istall_nvidia_docker.sh 
+wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/install_nvidia_docker.sh
 ```
 ### 用docker 部署alist
 ```sh
