@@ -14,7 +14,6 @@ AWS
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/AWS_lightsail_open_ssh.sh | sudo bash
-
 ```
 ### 甲骨文root解锁
 '''sh
