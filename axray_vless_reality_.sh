@@ -444,7 +444,7 @@ view_subscription_info() {
         echo -e "$green --- Xray VLESS-Reality 订阅信息 --- $none"
         echo -e "$yellow 名称: $cyan$link_name$none"
         echo -e "$yellow 地址: $cyan$ip$none"
-        echo -e "$yellow 端口: $cyan$port$none"
+        echo -e "$yellow 端口:<-!注意开放端口!->>> $cyan$port$none "
         echo -e "$yellow UUID: $cyan$uuid$none"
         echo -e "$yellow 流控: $cyan"xtls-rprx-vision"$none"
         echo -e "$yellow 指纹: $cyan"chrome"$none"
