@@ -250,10 +250,19 @@ install_xray() {
     fi
     info "开始配置 Xray..."
     local port uuid domain
-
+    # ------------随机默认端口------
     while true; do
-        read -p "$(echo -e "请输入端口 [1-65535] (默认: ${cyan}443${none}): ")" port
-        [ -z "$port" ] && port=443
+        # 自动生成一个未被占用的随机端口
+        while true; do
+            default_port=$((RANDOM % (65535 - 25000 + 1) + 25000))
+            if ! is_port_in_use "$default_port"; then
+                break
+            fi
+        done
+    
+        read -p "$(echo -e "请输入端口 [1-65535] (默认: ${cyan}${default_port}${none}): ")" port
+        [ -z "$port" ] && port=$default_port
+    
         if ! is_valid_port "$port"; then
             error "端口无效，请输入一个1-65535之间的数字。"
             continue
@@ -264,6 +273,21 @@ install_xray() {
         fi
         break
     done
+    
+# 修改 ->随机一个25000+的端口并检查可用性，作为默认端口
+    # while true; do
+    #     read -p "$(echo -e "请输入端口 [1-65535] (默认: ${cyan}443${none}): ")" port
+    #     [ -z "$port" ] && port=443
+    #     if ! is_valid_port "$port"; then
+    #         error "端口无效，请输入一个1-65535之间的数字。"
+    #         continue
+    #     fi
+    #     if is_port_in_use "$port"; then
+    #         error "端口 $port 已被占用，请选择其他端口。"
+    #         continue
+    #     fi
+    #     break
+    # done
 
     while true; do
         read -p "$(echo -e "请输入UUID (留空将默认生成随机UUID): ")" uuid
