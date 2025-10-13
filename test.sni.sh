@@ -4,9 +4,8 @@
 
 # --- 域名列表 ---
 DOMAINS=(
-lpcdn.lpsnmedia.net
-d2c.aws.amazon.com
-c.s-microsoft.com
+www.icloud.com
+
 rum.hlx.page
 ts4.tc.mm.bing.net
 th.bing.com
@@ -14,6 +13,11 @@ download.amd.com
 images.nvidia.com
 d1.awsstatic.com
 s0.awsstatic.com
+vs.aws.amazon.com
+azure.microsoft.com
+go.microsoft.com
+downloaddispatch.itunes.apple.com
+apps.mzstatic.com
 )
 
 RESULTS=()
