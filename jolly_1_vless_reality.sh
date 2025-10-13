@@ -438,7 +438,8 @@ view_subscription_info() {
     if [[ "$is_quiet" = true ]]; then
         echo "${vless_url}"
     else
-        echo "${vless_url}" > ~/xray_vless_reality_link.txt
+        # echo "${vless_url}" > ~/xray_vless_reality_link.txt
+        echo "${vless_url}" > ./xray_vless_reality_link.txt  # 修改至当前文件目录
         echo "----------------------------------------------------------------"
         echo -e "$green --- Xray VLESS-Reality 订阅信息 --- $none"
         echo -e "$yellow 名称: $cyan$link_name$none"
