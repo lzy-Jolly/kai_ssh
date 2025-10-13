@@ -353,7 +353,7 @@ uninstall_xray() {
     fi
     info "正在卸载 Xray..."
     if execute_official_script "remove --purge"; then
-        rm -f ~/xray_vless_reality_link.txt
+        rm -f ./xray_vless_reality_link.txt
         success "Xray 已成功卸载。"
     else
         error "Xray 卸载失败！"
@@ -452,7 +452,7 @@ view_subscription_info() {
         echo -e "$yellow 公钥: $cyan$public_key$none"
         echo -e "$yellow ShortId: $cyan$shortid$none"
         echo "----------------------------------------------------------------"
-        echo -e "$green 订阅链接 (已保存到 ~/xray_vless_reality_link.txt): $none\n"; echo -e "$cyan${vless_url}${none}"
+        echo -e "$green 订阅链接 (已保存到 ./xray_vless_reality_link.txt): $none\n"; echo -e "$cyan${vless_url}${none}"
         echo "----------------------------------------------------------------"
     fi
 }
