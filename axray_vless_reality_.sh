@@ -301,8 +301,11 @@ install_xray() {
             error "UUID格式无效，请输入标准UUID格式 (如: 550e8400-e29b-41d4-a716-446655440000) 或留空自动生成。"
         fi
     done
-
+    
+    
     while true; do
+        # 修改加入测试sni，返回top5供手选
+        execute_sni_test || { error "SNI 测试失败，请检查网络"; continue; }
         read -p "$(echo -e "请输入SNI域名 (默认: ${cyan}learn.microsoft.com${none}): ")" domain
         [ -z "$domain" ] && domain="learn.microsoft.com"
         if is_valid_domain "$domain"; then break; else error "域名格式无效，请重新输入。"; fi
@@ -310,6 +313,33 @@ install_xray() {
 
     run_install "$port" "$uuid" "$domain"
 }
+# 检查选择合适的sni 
+execute_sni_test() {
+    local sni_script_url="https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/test.sni.sh"
+    local local_script="./test.sni.sh"
+
+    # 如果本地不存在或者远程有更新，则下载覆盖
+    if [[ ! -f "$local_script" ]]; then
+        info "正在下载 test.sni.sh 脚本..."
+        curl -fsSL "$sni_script_url" -o "$local_script" || { error "下载失败！"; return 1; }
+        chmod +x "$local_script"
+    else
+        # 检查更新（可选）
+        local remote_hash=$(curl -fsSL "$sni_script_url" | sha256sum | awk '{print $1}')
+        local local_hash=$(sha256sum "$local_script" | awk '{print $1}')
+        if [[ "$remote_hash" != "$local_hash" ]]; then
+            info "检测到 test.sni.sh 有更新，正在下载..."
+            curl -fsSL "$sni_script_url" -o "$local_script" || { error "更新失败！"; return 1; }
+            chmod +x "$local_script"
+        fi
+    fi
+
+    # 执行脚本
+    info "正在执行 test.sni.sh 脚本..."
+    "$local_script"
+    return $?
+}
+
 
 update_xray() {
     if [[ ! -f "$xray_binary_path" ]]; then error "错误: Xray 未安装，无法执行更新。请先选择安装选项。" && return; fi
