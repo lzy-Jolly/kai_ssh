@@ -633,6 +633,30 @@ system_update() {
     stop_spinner
     log "${GREEN}✅ 系统更新完成${NC}"
 }
+# 测试sni连通性
+run_test_sni() {
+    log "\n${YELLOW}=============== 10. 测试域名连接性 ===============${NC}"
+    
+    local url="https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/test.sni.sh"
+    local local_file="./test.sni.sh"
+
+    start_spinner "下载 test.sni.sh ... "
+    if curl -sL -o "$local_file" "$url"; then
+        stop_spinner
+        chmod +x "$local_file"
+        log "${GREEN}✅ 下载完成: $local_file${NC}"
+    else
+        stop_spinner
+        log "${RED}[ERROR] 下载 test.sni.sh 失败${NC}"
+        return 1
+    fi
+
+    log "${BLUE}执行 test.sni.sh ...${NC}"
+    "$local_file"
+    log "${GREEN}✅ test.sni.sh 执行完成${NC}"
+}
+
+
 
 # ==============================================================================
 # --- 主函数 ---
@@ -706,6 +730,9 @@ main() {
             [[ ! "$REPLY" =~ ^[Nn]$ ]] && { log "${BLUE}重启中...${NC}"; sleep 2; reboot; }
         fi
     fi
+    # 运行sni测试脚本
+    run_test_sni
+
     
     [[ $VERIFICATION_FAILED -eq 0 ]] && exit 0 || exit 1
 }
