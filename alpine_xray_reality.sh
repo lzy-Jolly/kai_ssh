@@ -96,7 +96,7 @@ execute_official_script() {
 
     info "开始执行 Xray 安装脚本..."
     # 官方建议在 Alpine 下用 ash 执行
-    ash "./$xray_local_install_script" # $cmd_args >> /tmp/xray_install.log 2>&1
+    ash "./$xray_local_install_script"  $cmd_args >> /tmp/xray_install.log 2>&1
     # result=$?
 
     # 等待安装完成：检测 /usr/local/bin/xray 是否存在
@@ -182,77 +182,33 @@ check_system_compatibility() {
     return 0
 }
 
-# ---Jolly 预检查与环境设置 ---
+
 # --- 预检查与环境设置 ---
 pre_check() {
-    [[ $(id -u) != 0 ]] && error "错误: 您必须以root用户身份运行此脚本" && exit 1
-    
-    # 使用改进的系统兼容性检查
-    if ! check_system_compatibility; then
+    # 必须使用 root 用户
+    [[ $(id -u) != 0 ]] && error "错误: 您必须以 root 用户身份运行此脚本" && exit 1
+
+    # ------------------ 系统兼容性检查 ------------------
+    if [[ ! -f /etc/alpine-release ]]; then
+        error "错误: 此脚本仅支持 Alpine 系统。"
         exit 1
     fi
 
+    # ------------------ 依赖检查 ------------------
     if ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
-        info "检测到缺失的依赖 (jq/curl)，正在尝试自动安装..."
-        (DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y jq curl) &> /dev/null &
-        spinner $!
+        info "检测到缺失的依赖 (jq / curl)，正在尝试自动安装..."
+        apk update &>/dev/null
+        apk add --no-cache jq curl &>/dev/null &
+        # spinner $!
         if ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
-            error "依赖 (jq/curl) 自动安装失败。请手动运行 'apt update && apt install -y jq curl' 后重试。"
+            error "依赖 (jq / curl) 自动安装失败，请手动运行："
+            echo "  apk update && apk add --no-cache jq curl"
             exit 1
         fi
         success "依赖已成功安装。"
     fi
 }
 
-
-# jolly_install_xray() {
-#     # 先检查 Xray 是否已经安装
-#     check_xray_status
-#     if [[ "$xray_status_info" =~ "已安装" ]]; then
-#         echo "Xray is already installed. Skipping installation."
-#         return 0
-#     fi
-
-#     echo "Checking curl..."
-#     apk update
-#     apk upgrade
-#     if ! command -v curl >/dev/null 2>&1; then
-#         echo "curl not found, installing..."
-#         # apk update
-#         # apk upgrade
-#         apk add --no-cache curl
-#         if [ $? -ne 0 ]; then
-#             echo "curl installation failed. Check network or APK source."
-#             return 1
-#         fi
-#     else
-#         echo "curl is already installed."
-#     fi
-
-#     # Download Xray install script
-#     XRAY_SCRIPT="install-release.sh"
-#     XRAY_URL="https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-release.sh"
-
-#     echo "Downloading Xray install script..."
-#     curl -O -L "$XRAY_URL"
-#     if [ $? -ne 0 ]; then
-#         echo "Download failed. Check network."
-#         return 1
-#     fi
-#     chmod +x "$XRAY_SCRIPT"
-#     echo "Download completed and executable set."
-
-#     # Run the install script
-#     echo "Running Xray install script..."
-#     ash "$XRAY_SCRIPT"
-#     if [ $? -ne 0 ]; then
-#         echo "Xray installation failed."
-#         return 1
-#     fi
-
-#     echo "Xray installation completed successfully."
-#     return 0
-# }
 
 
 check_xray_status() {
@@ -266,11 +222,22 @@ check_xray_status() {
 
 # --- 菜单功能函数 (大部分逻辑不变, 仅调用修改后的核心函数) ---
 install_xray() {
+    # if [[ -f "$xray_binary_path" ]]; then
+    #     info "检测到 Xray 已安装。继续操作将覆盖现有配置。"
+    #     read -p "是否继续？[y/N]: " confirm
+    #     if [[ ! $confirm =~ ^[yY]$ ]]; then info "操作已取消。"; return; fi
+    # fi
+    # 修改默认是y
     if [[ -f "$xray_binary_path" ]]; then
-        info "检测到 Xray 已安装。继续操作将覆盖现有配置。"
-        read -p "是否继续？[y/N]: " confirm
-        if [[ ! $confirm =~ ^[yY]$ ]]; then info "操作已取消。"; return; fi
+    info "检测到 Xray 已安装。继续操作将覆盖现有配置。"
+    read -p "是否继续？[Y/n]: " confirm
+    confirm=${confirm:-Y}  # 若用户直接回车，默认为 Y
+    if [[ ! $confirm =~ ^[yY]$ ]]; then
+        info "操作已取消。"
+        return
     fi
+fi
+
     info "开始配置 Xray..."
     local port uuid domain
     while true; do
@@ -518,45 +485,6 @@ write_config() {
         }]
     }' > "$xray_config_path"
 }
-# # 定制一个一键脚本，不要原本的安装方式
-# jolly_install_xray() {
-#     echo "Checking curl..."
-#     if ! command -v curl >/dev/null 2>&1; then
-#         echo "curl not found, installing..."
-#         apk update
-#         apk add --no-cache curl jq
-#         if [ $? -ne 0 ]; then
-#             echo "curl installation failed. Check network or APK source."
-#             return 1
-#         fi
-#     else
-#         echo "curl is already installed."
-#     fi
-
-#     # Download Xray install script
-#     XRAY_SCRIPT="install-release.sh"
-#     XRAY_URL="https://github.com/XTLS/Xray-install/raw/main/alpinelinux/install-release.sh"
-
-#     echo "Downloading Xray install script..."
-#     curl -O -L "$XRAY_URL"
-#     if [ $? -ne 0 ]; then
-#         echo "Download failed. Check network."
-#         return 1
-#     fi
-#     chmod +x "$XRAY_SCRIPT"
-#     echo "Download completed and executable set."
-
-#     # Run the install script
-#     echo "Running Xray install script..."
-#     ash "$XRAY_SCRIPT"
-#     if [ $? -ne 0 ]; then
-#         echo "Xray installation failed."
-#         return 1
-#     fi
-
-#     echo "Xray installation completed successfully."
-#     return 0
-# }
 
 run_install() {
     local port=$1 uuid=$2 domain=$3
@@ -566,11 +494,6 @@ run_install() {
         exit 1
     fi
 
-
-    # if ! jolly_install_xray ; then
-    #     error "Xray 核心安装失败！请检查网络连接。"
-    #     exit 1
-    # fi
 
     info "正在安装/更新 GeoIP 和 GeoSite 数据文件..."
     if ! execute_official_script "install-geodata"; then
@@ -639,21 +562,6 @@ main_menu() {
         fi
     done
 }
-# oneclick() {
-#     # 先检查 Xray 是否已经安装
-#     echo "------------run oneclick--------"
-#     check_xray_status
-#     if [[ "$xray_status_info" =~ "已安装" ]]; then
-#         echo "Xray is already installed. Skipping installation."
-#         return 0
-#     fi
-
-#     chmod +x oneclick_install_xray_in_alpine.sh
-#     ./oneclick_install_xray_in_alpine.sh
-
-#     echo "Xray installation completed successfully."
-#     return 0
-# }
 
 
 
