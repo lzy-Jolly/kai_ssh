@@ -531,6 +531,7 @@ main_menu() {
         echo "---------------------------------------------"
         check_xray_status
         echo -e "${xray_status_info}"
+        echo "重新进入请执行 ./alpine_xray_reality.sh"
         echo "---------------------------------------------"
         printf "  ${green}%-2s${none} %-35s\n" "1." "安装/重装 Xray"
         printf "  ${cyan}%-2s${none} %-35s\n" "2." "更新 Xray"
@@ -568,10 +569,7 @@ main_menu() {
 
 # --- 脚本主入口 ---
 main() {
-    # Non-interactive mode is not supported in this version
-    # jolly_install_xray
-    # oneclick
-    
+
     pre_check
     main_menu
 }
