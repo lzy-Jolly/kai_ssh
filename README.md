@@ -35,18 +35,10 @@ curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/blob/main/AWS_lig
 ```sh
 wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/install_nvidia_docker.sh
 ```
-### 用docker 部署alist
-```sh
-curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/docker-compose-alist.sh | sudo bash
-```
 
 
-### jolly_ssh.sh
+### one click install vless and xray in Alpine
 ```sh
-wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/jolly_ssh.sh -O jolly_ssh.sh && sudo bash jolly_ssh.sh
-
-```
-```sh
-curl -fsSL https://github.com/lzy-Jolly/kai_ssh/blob/main/main/jolly_ssh.sh | sudo bash
+https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/oneclick_install_xray_in_alpine.sh
 ```
 
