@@ -39,6 +39,6 @@ wget https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/main/install_nvidia_doc
 
 ### one click install vless and xray in Alpine
 ```sh
-https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/oneclick_install_xray_in_alpine.sh
+curl -fsSL https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/oneclick_install_xray_in_alpine.sh | sh
 ```
 
