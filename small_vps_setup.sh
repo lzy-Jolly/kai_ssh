@@ -691,8 +691,8 @@ main() {
     SECONDS=0
     
     pre_flight_checks
-    install_packages
-    configure_hostname
+    # install_packages
+    # configure_hostname
     configure_timezone
     configure_bbr
     configure_swap
