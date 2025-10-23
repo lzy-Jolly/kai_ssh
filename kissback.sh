@@ -118,10 +118,8 @@ decode_and_root() {
                     if echo "$line" | grep -q 'kiss@jolly'; then
                         local last20=$(echo "$line" | tail -c 20)
                         while true; do
-#                        	   echo "发现旧秘钥末尾: $last20"
                         	   echo "Found old key ending: $last20"
-#                            read -p "是否删除?(y/N): / delete? (y/N): " del
-					   read -p "是否删除该行?(y/N): " del </dev/tty
+					    read -p "是否删除该行?(y/N): " del </dev/tty
                             del=${del:-N}
                             case "$del" in
                                 y|Y)
@@ -146,21 +144,37 @@ decode_and_root() {
                 [ $modified -eq 1 ] && mv "$tmp_auth" /root/.ssh/authorized_keys
                 rm -f "$tmp_auth"
             fi
-            
+            # --- 临时修改 sshd_config 确保 PubkeyAuthentication yes ---
+
+            SSHD_CONF="/etc/ssh/sshd_config"
+            SSHD_CONF_BAK="/etc/ssh/sshd_config.bak_$(date +%s)"
+            cp "$SSHD_CONF" "$SSHD_CONF_BAK"
+
+            # 如果不存在该行，添加；存在则替换为 yes
+            if grep -q '^PubkeyAuthentication' "$SSHD_CONF"; then
+                sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/' "$SSHD_CONF"
+            else
+                echo 'PubkeyAuthentication yes' >> "$SSHD_CONF"
+            fi
+            # 重启 sshd
+            try_restart_sshd
+            echo "Ensured PubkeyAuthentication yes"
+
+
             # 追加新公钥
             # Append new public key
             cat kissvps.pub | tee -a /root/.ssh/authorized_keys >/dev/null
             chmod 600 /root/.ssh/authorized_keys
-            echo "✅ 公钥追加完成 / Public key appended"
+            echo "公钥追加完成 / Public key appended"
             rm -f helloworld.base
-            echo " 已删除 helloworld.base / helloworld.base deleted"
+            echo "已删除 helloworld.base / helloworld.base deleted"
             return 0
         else
             echo " 解密失败（密码错误）/ Decryption failed (wrong password)"
         fi
         
         ((tries++))
-        [ $tries -lt $max_tries ] && echo "ℹ️ 还有 $((max_tries - tries)) 次机会 / $((max_tries - tries)) attempts remaining"
+        [ $tries -lt $max_tries ] && echo "还有 $((max_tries - tries)) 次机会 / $((max_tries - tries)) attempts remaining"
     done
     
     echo "❌ 解密失败次数过多 / Too many decryption failures"
@@ -199,16 +213,21 @@ change_pwd_login() {
     grep -q '^PermitRootLogin' /etc/ssh/sshd_config || echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config
     
     # 重启 SSH 服务
+    try_restart_sshd
+    
+    rm -f kissvps.pub
+#    echo "✅ kissvps.pub 已删除，root 密码登录已禁止 "
+    echo "kissvps.pub deleted, root password login disabled"
+}
+
+try_restart_sshd(){
+        # 重启 SSH 服务
     # Restart SSH service
     if command -v systemctl >/dev/null; then
         systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null || echo "⚠️ 请手动重启 SSH / Please restart SSH manually"
     elif command -v service >/dev/null; then
         service ssh restart 2>/dev/null || service sshd restart 2>/dev/null || echo "⚠️ 请手动重启 SSH / Please restart SSH manually"
     fi
-    
-    rm -f kissvps.pub
-#    echo "✅ kissvps.pub 已删除，root 密码登录已禁止 "
-    echo "kissvps.pub deleted, root password login disabled"
 }
 
 # -------------------------------
