@@ -91,13 +91,13 @@ echo "start running --------alpine_xray_reality.sh "
 # 检查是否有本地 Reality 脚本
     if [[ -f "$REALITY_SCRIPT" ]]; then
         echo "Found $REALITY_SCRIPT, executing alpine_xray_reality.sh"
-        bash "$REALITY_SCRIPT"
+        # bash "$REALITY_SCRIPT"
         exit 0
     else
         echo "Downloading $REALITY_SCRIPT..."
         curl -O -L "$REALITY_URL"
         chmod +x "$REALITY_SCRIPT"
-        bash "$REALITY_SCRIPT"
+        # bash "$REALITY_SCRIPT"
         exit 0
     fi
 echo "重新进入请执行 ./alpine_xray_reality.sh"
