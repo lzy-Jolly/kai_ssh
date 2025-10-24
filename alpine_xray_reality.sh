@@ -18,8 +18,8 @@ readonly xray_install_script_url="https://github.com/XTLS/Xray-install/raw/main/
 readonly xray_local_install_script="install-release.sh"
 
 # --- 颜色定义 ---
-readonly red='\e[91m' green='\e[92m' yellow='\e[93m'
-readonly magenta='\e[95m' cyan='\e[96m' none='\e[0m'
+readonly red='\033[91m'; green='\033[92m'; yellow='\033[93m'; magenta='\033[95m'; cyan='\033[96m'; none='\033[0m'
+
 
 # --- 全局变量 ---
 xray_status_info=""
@@ -60,7 +60,51 @@ get_public_ip() {
     done
     error "无法获取公网 IP 地址。" && return 1
 }
+# 从 portslist.txt 中选择未被占用的端口对
+choose_port_pair() {
+    local list_file="./portslist.txt"
+    [ ! -f "$list_file" ] && return 1  # 不存在则退出，用原逻辑
 
+    local pairs="" count=0 invalid=0 inner outer
+
+    while IFS=, read -r inner outer; do
+        [ "$inner" = "inner" ] && continue
+
+        # 检查数字与范围
+        case "$inner" in ''|*[!0-9]*) invalid=$((invalid+1)); continue ;; esac
+        case "$outer" in ''|*[!0-9]*) invalid=$((invalid+1)); continue ;; esac
+        if [ "$inner" -lt 1024 ] || [ "$inner" -gt 65535 ] || \
+           [ "$outer" -lt 1024 ] || [ "$outer" -gt 65535 ]; then
+            invalid=$((invalid+1))
+            continue
+        fi
+
+        if ! is_port_in_use "$inner"; then
+            pairs="${pairs}${inner},${outer}\n"
+            count=$((count+1))
+        fi
+    done < "$list_file"
+
+    [ "$count" -eq 0 ] && return 1
+
+    # 生成随机行号
+    local rand_line=$((RANDOM % count + 1))
+    local selected
+    selected=$(echo -e "$pairs" | sed -n "${rand_line}p")
+
+    rand_inner="${selected%,*}"
+    rand_outer="${selected#*,}"
+
+
+
+    if [ "$invalid" -gt 0 ]; then
+        echo -e "有${red}${invalid}${none}对格式错误（确认非字符串检查范围1024-65535）端口被忽略。\n"          
+    fi
+    echo -e "检测到 $count 对端口，随机选得默认为-->inner=${rand_inner}, outer=${rand_outer}" 
+
+    default_port="$rand_inner"
+    export rand_inner rand_outer default_port
+}
 
 
 execute_official_script() {
@@ -222,12 +266,7 @@ check_xray_status() {
 
 # --- 菜单功能函数 (大部分逻辑不变, 仅调用修改后的核心函数) ---
 install_xray() {
-    # if [[ -f "$xray_binary_path" ]]; then
-    #     info "检测到 Xray 已安装。继续操作将覆盖现有配置。"
-    #     read -p "是否继续？[y/N]: " confirm
-    #     if [[ ! $confirm =~ ^[yY]$ ]]; then info "操作已取消。"; return; fi
-    # fi
-    # 修改默认是y
+
     if [[ -f "$xray_binary_path" ]]; then
     info "检测到 Xray 已安装。继续操作将覆盖现有配置。"
     read -p "是否继续？[Y/n]: " confirm
@@ -242,7 +281,15 @@ fi
     local port uuid domain
     while true; do
         while true; do
-            default_port=$((RANDOM % (65535 - 25000 + 1) + 25000))
+            
+            # 如果存在 portslist.txt 就尝试选择一对端口
+            if [ -f "./portslist.txt" ]; then
+                choose_port_pair # 存在，随机选一个来自 portslist.txt 的端口对
+            else
+                default_port=$((RANDOM % (65535 - 25000 + 1) + 25000))  # 不存在，使用原随机逻辑
+                rand_inner=$default_port    # 同时赋值给 rand_inner 和 rand_outer 以保持一致
+                rand_outer=$default_port
+            fi
             if ! is_port_in_use "$default_port"; then break; fi
         done
         read -p "$(echo -e "请输入端口 [1-65535] (默认随机为: ${cyan}${default_port}${none}): ")" port
@@ -411,32 +458,39 @@ view_subscription_info() {
     local display_ip=$ip && [[ $ip =~ ":" ]] && display_ip="[$ip]"
     local link_name="$(hostname) X-reality"
     local link_name_encoded=$(echo "$link_name" | sed 's/ /%20/g')
-    local vless_url="vless://${uuid}@${display_ip}:${port}?flow=xtls-rprx-vision&encryption=none&type=tcp&security=reality&sni=${domain}&fp=chrome&pbk=${public_key}&sid=${shortid}#${link_name_encoded}"
+    # local vless_url="vless://${uuid}@${display_ip}:${port}?flow=xtls-rprx-vision&encryption=none&type=tcp&security=reality&sni=${domain}&fp=chrome&pbk=${public_key}&sid=${shortid}#${link_name_encoded}"
+    # 修改对应rand_outer
+    local vless_url="vless://${uuid}@${display_ip}:${rand_outer}?flow=xtls-rprx-vision&encryption=none&type=tcp&security=reality&sni=${domain}&fp=chrome&pbk=${public_key}&sid=${shortid}#${link_name_encoded}"
+    
 
     if [[ "$is_quiet" = true ]]; then
         echo "${vless_url}"
     else
         echo "${vless_url}" > ./xray_vless_reality_link.txt
         echo "----------------------------------------------------------------"
-        echo -e "$green --- Xray VLESS-Reality 订阅信息 --- $none"
-        echo -e "$yellow 名称: $cyan$link_name$none"
-        echo -e "$yellow 地址: $cyan$ip$none"
-        echo -e "$yellow 端口:<-!！注意开放端口!->>> $cyan$port$none "
-        echo -e "$yellow UUID: $cyan$uuid$none"
-        echo -e "$yellow 流控: $cyan"xtls-rprx-vision"$none"
-        echo -e "$yellow 指纹: $cyan"chrome"$none"
-        echo -e "$yellow SNI: $cyan$domain$none"
-        echo -e "$yellow 公钥: $cyan$public_key$none"
-        echo -e "$yellow ShortId: $cyan$shortid$none"
+        echo -e "${green}--- Xray VLESS-Reality 订阅信息 ---${none}"
+        echo -e "${yellow}名称: ${cyan}${link_name}${none}"
+        echo -e "${yellow}地址: ${cyan}${ip}${none}"
+        echo -e "${yellow}端口: inner:${yellow}${rand_inner}${none} <-!注意开放端口!-> outer:${yellow}${rand_outer}${none} ${cyan}${port}${none}"
+        echo -e "${yellow}UUID: ${cyan}${uuid}${none}"
+        echo -e "${yellow}流控: ${cyan}xtls-rprx-vision${none}"
+        echo -e "${yellow}指纹: ${cyan}chrome${none}"
+        echo -e "${yellow}SNI: ${cyan}${domain}${none}"
+        echo -e "${yellow}公钥: ${cyan}${public_key}${none}"
+        echo -e "${yellow}ShortId: ${cyan}${shortid}${none}"
         echo "----------------------------------------------------------------"
-        echo -e "$yellow <-!！注意开放端口!->>> $cyan$port$none "
-        echo -e "$green 订阅链接 (已保存到 ./xray_vless_reality_link.txt): $none\n"; echo -e "$cyan${vless_url}${none}"
+        echo -e "${yellow}inner:${yellow}${rand_inner}${none} <-!注意开放端口!-> outer:${yellow}${rand_outer}${none} ${cyan}${port}${none}"
+        echo -e "${green}订阅链接 (已保存到 ./xray_vless_reality_link.txt):${none}\n"
+        echo -e "${cyan}${vless_url}${none}"
         echo "----------------------------------------------------------------"
     fi
 }
 
 write_config() {
-    local port=$1 uuid=$2 domain=$3 private_key=$4 public_key=$5 shortid="20220701"
+    local port=$1 uuid=$2 domain=$3 private_key=$4 public_key=$5 # shortid="20220701"
+    # 升级一下shortid 生成逻辑
+    local shortid
+    shortid=$(TZ=Asia/Shanghai date +%Y%m%d)
     # MODIFIED FOR ALPINE: Point log file to /var/log/xray/error.log for `view_xray_log` to work
     jq -n \
         --argjson port "$port" \
