@@ -60,12 +60,14 @@ get_public_ip() {
     done
     error "无法获取公网 IP 地址。" && return 1
 }
-# 从 portslist.txt 中选择未被占用的端口对
+# 从 portslist.txt 中选择未被占用的端口对，可选匹配当前端口
 choose_port_pair() {
+    local current_port="${1:-}"   # 可选参数，不传则为空
     local list_file="./portslist.txt"
-    [ ! -f "$list_file" ] && return 1  # 不存在则退出，用原逻辑
+    [ ! -f "$list_file" ] && return 1  # 文件不存在则退出
 
     local pairs="" count=0 invalid=0 inner outer
+    local matched_inner matched_outer
 
     while IFS=, read -r inner outer; do
         [ "$inner" = "inner" ] && continue
@@ -79,30 +81,50 @@ choose_port_pair() {
             continue
         fi
 
+        # 收集未占用端口对
         if ! is_port_in_use "$inner"; then
             pairs="${pairs}${inner},${outer}\n"
             count=$((count+1))
         fi
+
+        # 如果传入了 current_port，检查匹配
+        if [ -n "$current_port" ] && { [ "$inner" -eq "$current_port" ] || [ "$outer" -eq "$current_port" ]; }; then
+            matched_inner="$inner"
+            matched_outer="$outer"
+        fi
     done < "$list_file"
 
-    [ "$count" -eq 0 ] && return 1
+    [ "$invalid" -gt 0 ] && echo -e "有${red}${invalid}${none}对格式错误端口被忽略。"
 
-    # 生成随机行号
+    # 如果匹配到当前端口，优先使用并高亮显示
+    if [ -n "$matched_inner" ] && [ -n "$matched_outer" ]; then
+        rand_inner="$matched_inner"
+        rand_outer="$matched_outer"
+        default_port="$rand_inner"
+        echo -e "匹配到当前端口配对，使用-->inner=${green}${rand_inner}${none}, outer=${green}${rand_outer}${none}"
+        export rand_inner rand_outer default_port
+        return 0
+    fi
+
+    # 否则随机选择未占用端口对（原逻辑）
+    if [ "$count" -eq 0 ]; then
+        echo "未找到可用端口对，退回原有随机逻辑"
+        return 1
+    fi
+
     local rand_line=$((RANDOM % count + 1))
     local selected
     selected=$(echo -e "$pairs" | sed -n "${rand_line}p")
-
     rand_inner="${selected%,*}"
     rand_outer="${selected#*,}"
-
-
-
-    if [ "$invalid" -gt 0 ]; then
-        echo -e "有${red}${invalid}${none}对格式错误（确认非字符串检查范围1024-65535）端口被忽略。\n"          
-    fi
-    echo -e "检测到 $count 对端口，随机选得默认为-->inner=${rand_inner}, outer=${rand_outer}" 
-
     default_port="$rand_inner"
+
+    if [ -n "$current_port" ]; then
+        echo -e "检测到 $count 对端口，随机选得默认为-->inner=${rand_inner}, outer=${rand_outer} (未匹配当前端口)"
+    else
+        echo -e "检测到 $count 对端口，随机选得默认为-->inner=${rand_inner}, outer=${rand_outer}"
+    fi
+
     export rand_inner rand_outer default_port
 }
 
