@@ -579,23 +579,26 @@ press_any_key_to_continue() {
 }
 
 main_menu() {
-    while true; do
-        clear
-        echo -e "$cyan Xray VLESS-Reality 一键脚本 (Alpine Edition)$none"
+    while true; do        
+        echo -e "${cyan}Xray VLESS-Reality 一键脚本 (Alpine Edition)${none}"
         echo "---------------------------------------------"
+        
         check_xray_status
         echo -e "${xray_status_info}"
+        
         echo "重新进入请执行 ./alpine_xray_reality.sh"
         echo "---------------------------------------------"
-        printf "  ${green}%-2s${none} %-35s\n" "1." "安装/重装 Xray"
-        printf "  ${cyan}%-2s${none} %-35s\n" "2." "更新 Xray"
-        printf "  ${yellow}%-2s${none} %-35s\n" "3." "重启 Xray"
-        printf "  ${red}%-2s${none} %-35s\n" "4." "卸载 Xray"
-        printf "  ${magenta}%-2s${none} %-35s\n" "5." "查看 Xray 日志"
-        printf "  ${cyan}%-2s${none} %-35s\n" "6." "修改节点配置"
-        printf "  ${green}%-2s${none} %-35s\n" "7." "查看订阅信息"
+        
+        echo -e "  ${green}1.${none} 安装/重装 Xray"
+        echo -e "  ${cyan}2.${none} 更新 Xray"
+        echo -e "  ${yellow}3.${none} 重启 Xray"
+        echo -e "  ${red}4.${none} 卸载 Xray"
+        echo -e "  ${magenta}5.${none} 查看 Xray 日志"
+        echo -e "  ${cyan}6.${none} 修改节点配置"
+        echo -e "  ${green}7.${none} 查看订阅信息"
+        
         echo "---------------------------------------------"
-        printf "  ${yellow}%-2s${none} %-35s\n" "0." "退出脚本"
+        echo -e "  ${yellow}0.${none} 退出脚本"
         echo "---------------------------------------------"
         read -p "请输入选项 [0-7]: " choice
 
