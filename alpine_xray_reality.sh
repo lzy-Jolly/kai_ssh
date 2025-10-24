@@ -62,17 +62,20 @@ get_public_ip() {
 }
 # 从 portslist.txt 中选择未被占用的端口对，可选匹配当前端口
 choose_port_pair() {
-    local current_port="${1:-}"   # 可选参数，不传则为空
-    local list_file="./portslist.txt"
-    [ ! -f "$list_file" ] && return 1  # 文件不存在则退出
+    current_port="${1:-}"   # 可选参数，不传则为空
+    list_file="./portslist.txt"
+    [ ! -f "$list_file" ] && return 1
 
-    local pairs="" count=0 invalid=0 inner outer
-    local matched_inner matched_outer
+    pairs=""
+    count=0
+    invalid=0
+    matched_inner=""
+    matched_outer=""
 
     while IFS=, read -r inner outer; do
         [ "$inner" = "inner" ] && continue
 
-        # 检查数字与范围
+        # 检查是否为数字且在范围内
         case "$inner" in ''|*[!0-9]*) invalid=$((invalid+1)); continue ;; esac
         case "$outer" in ''|*[!0-9]*) invalid=$((invalid+1)); continue ;; esac
         if [ "$inner" -lt 1024 ] || [ "$inner" -gt 65535 ] || \
@@ -87,7 +90,7 @@ choose_port_pair() {
             count=$((count+1))
         fi
 
-        # 如果传入了 current_port，检查匹配
+        # 匹配当前端口
         if [ -n "$current_port" ] && { [ "$inner" -eq "$current_port" ] || [ "$outer" -eq "$current_port" ]; }; then
             matched_inner="$inner"
             matched_outer="$outer"
@@ -96,7 +99,7 @@ choose_port_pair() {
 
     [ "$invalid" -gt 0 ] && echo -e "有${red}${invalid}${none}对格式错误端口被忽略。"
 
-    # 如果匹配到当前端口，优先使用并高亮显示
+    # 匹配到当前端口
     if [ -n "$matched_inner" ] && [ -n "$matched_outer" ]; then
         rand_inner="$matched_inner"
         rand_outer="$matched_outer"
@@ -106,14 +109,13 @@ choose_port_pair() {
         return 0
     fi
 
-    # 否则随机选择未占用端口对（原逻辑）
+    # 随机选择未占用端口对
     if [ "$count" -eq 0 ]; then
         echo "未找到可用端口对，退回原有随机逻辑"
         return 1
     fi
 
-    local rand_line=$((RANDOM % count + 1))
-    local selected
+    rand_line=$((RANDOM % count + 1))
     selected=$(echo -e "$pairs" | sed -n "${rand_line}p")
     rand_inner="${selected%,*}"
     rand_outer="${selected#*,}"
@@ -127,6 +129,7 @@ choose_port_pair() {
 
     export rand_inner rand_outer default_port
 }
+
 
 
 execute_official_script() {
