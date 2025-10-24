@@ -11,6 +11,16 @@ yellow="\033[33m"
 cyan="\033[36m"
 none="\033[0m"
 
+# 获取当前目录最后一级
+current_dir=$(basename "$PWD")
+
+# 如果不是 latters，就创建并进入
+if [[ "$current_dir" != "latters" ]]; then
+    mkdir -p latters
+    cd latters || exit 1
+fi
+
+
 REALITY_SCRIPT="./alpine_xray_reality.sh"
 REALITY_URL="https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/alpine_xray_reality.sh"
 
