@@ -52,4 +52,4 @@ done
 
 # --- 输出结果 ---
 echo "=== Top 5 延迟最短域名 ==="
-printf "$RESULTS" | sort -n | head -n 5 | awk '{print $2 ": " $1 " ms"}'
+printf "$RESULTS" | sort -n | head -n 5 | awk '{print $2 " ---> " $1 " ms"}'
