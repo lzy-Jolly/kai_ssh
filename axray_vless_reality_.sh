@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# this is axray_vless_reality_.sh
 # ==============================================================================
 # Xray VLESS-Reality 一键安装管理脚本
 # 版本: V-Final-2.1
@@ -212,6 +212,80 @@ check_system_compatibility() {
     return 0
 }
 
+# 从 portslist.txt 中选择未被占用的端口对，可选匹配当前端口
+choose_port_pair() {
+    current_port="${1:-}"   # 可选参数，不传则为空
+    list_file="./portslist.txt"
+    [ ! -f "$list_file" ] && return 1
+    
+    # edit Windows \n \r diff with linux
+    sed -i 's/\r$//' "$list_file"
+    
+    
+    pairs=""
+    count=0
+    invalid=0
+    matched_inner=""
+    matched_outer=""
+
+    while IFS=, read -r inner outer; do
+        [ "$inner" = "inner" ] && continue
+
+        # 检查是否为数字且在范围内
+        case "$inner" in ''|*[!0-9]*) invalid=$((invalid+1)); continue ;; esac
+        case "$outer" in ''|*[!0-9]*) invalid=$((invalid+1)); continue ;; esac
+        if [ "$inner" -lt 1024 ] || [ "$inner" -gt 65535 ] || \
+           [ "$outer" -lt 1024 ] || [ "$outer" -gt 65535 ]; then
+            invalid=$((invalid+1))
+            continue
+        fi
+
+        # 收集未占用端口对
+        if ! is_port_in_use "$inner"; then
+            pairs="${pairs}${inner},${outer}\n"
+            count=$((count+1))
+        fi
+
+        # 匹配当前端口
+        if [ -n "$current_port" ] && { [ "$inner" -eq "$current_port" ] || [ "$outer" -eq "$current_port" ]; }; then
+            matched_inner="$inner"
+            matched_outer="$outer"
+        fi
+    done < "$list_file"
+
+    [ "$invalid" -gt 0 ] && echo -e "有${red}${invalid}${none}对格式错误端口被忽略。"
+
+    # 匹配到当前端口
+    if [ -n "$matched_inner" ] && [ -n "$matched_outer" ]; then
+        rand_inner="$matched_inner"
+        rand_outer="$matched_outer"
+        default_port="$rand_inner"
+        echo -e "匹配到当前端口配对，使用-->inner=${green}${rand_inner}${none}, outer=${green}${rand_outer}${none}"
+        export rand_inner rand_outer default_port
+        return 0
+    fi
+
+    # 随机选择未占用端口对
+    if [ "$count" -eq 0 ]; then
+        echo "未找到可用端口对，退回原有随机逻辑"
+        return 1
+    fi
+
+    rand_line=$((RANDOM % count + 1))
+    selected=$(echo -e "$pairs" | sed -n "${rand_line}p")
+    rand_inner="${selected%,*}"
+    rand_outer="${selected#*,}"
+    default_port="$rand_inner"
+
+    if [ -n "$current_port" ]; then
+        echo -e "检测到 $count 对端口，随机选得默认为-->inner=${rand_inner}, outer=${rand_outer} (未匹配当前端口)"
+    else
+        echo -e "检测到 $count 对端口，随机选得默认为-->inner=${rand_inner}, outer=${rand_outer}"
+    fi
+
+    export rand_inner rand_outer default_port
+}
+
 # --- 预检查与环境设置 ---
 pre_check() {
     [[ $(id -u) != 0 ]] && error "错误: 您必须以root用户身份运行此脚本" && exit 1
@@ -241,25 +315,44 @@ check_xray_status() {
     xray_status_info="  Xray 状态: ${green}已安装${none} | ${service_status} | 版本: ${cyan}${xray_version}${none}"
 }
 
-# --- 菜单功能函数 ---
+# --- 菜单功能函数 ---#
+
 install_xray() {
     if [[ -f "$xray_binary_path" ]]; then
         info "检测到 Xray 已安装。继续操作将覆盖现有配置。"
-        read -p "是否继续？[y/N]: " confirm
+        read -p "是否继续？[Y/n]: " confirm
+        confirm=${confirm:-Y}
         if [[ ! $confirm =~ ^[yY]$ ]]; then info "操作已取消。"; return; fi
     fi
+    
     info "开始配置 Xray..."
-    local port uuid domain
-    # ------------随机默认端口------
+    local port uuid domain default_port rand_inner rand_outer
+    
+    # ------------随机默认端口--(更新: 支持 portslist.txt)------
     while true; do
-        # 自动生成一个未被占用的随机端口
+        
+        default_port="" # 确保每次循环重置
+        
+        # 尝试从 portslist.txt 中选择端口对。如果成功，rand_inner, rand_outer, default_port会被设置。
+        choose_port_pair
+        
+        if [ -z "$default_port" ]; then
+            # 如果 choose_port_pair 失败 (文件不存在或未找到可用端口对)，则使用原始随机逻辑
         while true; do
             default_port=$((RANDOM % (65535 - 25000 + 1) + 25000))
             if ! is_port_in_use "$default_port"; then
+                    # 确保在未用 portslist 时，内部/外部端口也一致
+                    rand_inner="$default_port"
+                    rand_outer="$default_port"
+                    info "未从 portslist.txt 中获取到可用端口，使用随机端口: ${cyan}${default_port}${none}"
                 break
             fi
+            
+            # 如果被占用，循环继续，重新选择/生成端口。
         done
+        fi
     
+        # 提示用户输入端口
         read -p "$(echo -e "请输入端口 [1-65535] (默认: ${cyan}${default_port}${none}): ")" port
         [ -z "$port" ] && port=$default_port
     
@@ -267,27 +360,23 @@ install_xray() {
             error "端口无效，请输入一个1-65535之间的数字。"
             continue
         fi
-        if is_port_in_use "$port"; then
+        # 注意: choose_port_pair 已经保证其选出的 default_port 未被占用。
+        # 这里仅需检查用户自定义输入的 $port 是否被占用。
+        if [[ "$port" != "$default_port" ]] && is_port_in_use "$port"; then
             error "端口 $port 已被占用，请选择其他端口。"
             continue
         fi
+        
+        # 如果用户输入了自定义端口，则将 rand_inner/outer 设定为该值，确保后续配置使用该端口
+        if [[ "$port" != "$default_port" ]]; then
+            rand_inner="$port"
+            rand_outer="$port"
+        fi
+        
         break
     done
     
-# 修改 ->随机一个25000+的端口并检查可用性，作为默认端口
-    # while true; do
-    #     read -p "$(echo -e "请输入端口 [1-65535] (默认: ${cyan}443${none}): ")" port
-    #     [ -z "$port" ] && port=443
-    #     if ! is_valid_port "$port"; then
-    #         error "端口无效，请输入一个1-65535之间的数字。"
-    #         continue
-    #     fi
-    #     if is_port_in_use "$port"; then
-    #         error "端口 $port 已被占用，请选择其他端口。"
-    #         continue
-    #     fi
-    #     break
-    # done
+
 
     while true; do
         read -p "$(echo -e "请输入UUID (留空将默认生成随机UUID): ")" uuid
@@ -301,8 +390,7 @@ install_xray() {
             error "UUID格式无效，请输入标准UUID格式 (如: 550e8400-e29b-41d4-a716-446655440000) 或留空自动生成。"
         fi
     done
-    
-    
+        
     while true; do
         # 修改加入测试sni，返回top5供手选
         execute_sni_test || { error "SNI 测试失败，请检查网络"; continue; }
@@ -313,6 +401,10 @@ install_xray() {
 
     run_install "$port" "$uuid" "$domain"
 }
+
+
+
+
 # 检查选择合适的sni 
 execute_sni_test() {
     local sni_script_url="https://raw.githubusercontent.com/lzy-Jolly/kai_ssh/refs/heads/main/test.sni.sh"
@@ -405,6 +497,17 @@ modify_config() {
     local current_domain=$(jq -r '.inbounds[0].streamSettings.realitySettings.serverNames[0]' "$xray_config_path")
     local private_key=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$xray_config_path")
     local public_key=$(jq -r '.inbounds[0].streamSettings.realitySettings.publicKey' "$xray_config_path")
+    
+    # 尝试匹配当前端口，如果成功，rand_inner/outer 会被设置
+    # 这对于后续修改配置如果需要用到 outer 端口时非常关键。
+    local rand_inner="$current_port"
+    local rand_outer="$current_port"
+    choose_port_pair "$current_port" # 传入当前端口进行匹配
+    if [ "$?" -eq 0 ]; then
+        # 成功匹配到端口对，rand_inner 和 rand_outer 已经被 choose_port_pair 导出并设置。
+        info "当前端口 ${current_port} 在 portslist.txt 中匹配到的端口对是 inner=${rand_inner}, outer=${rand_outer}"
+        # 此时 current_port 应该等于 rand_inner，这里只是为了确认
+    fi
 
     info "请输入新配置，直接回车则保留当前值。"
     local port uuid domain
@@ -412,15 +515,24 @@ modify_config() {
     while true; do
         read -p "$(echo -e "端口 (当前: ${cyan}${current_port}${none}): ")" port
         [ -z "$port" ] && port=$current_port
+        
         if ! is_valid_port "$port"; then
             error "端口无效，请输入一个1-65535之间的数字。"
             continue
         fi
+        
         # 如果端口没有变化，跳过占用检查
         if [[ "$port" != "$current_port" ]] && is_port_in_use "$port"; then
             error "端口 $port 已被占用，请选择其他端口。"
             continue
         fi
+        
+        # 如果用户输入了自定义端口，则更新 rand_inner/outer 确保写入配置时使用正确值
+        if [[ "$port" != "$current_port" ]]; then
+            rand_inner="$port"
+            rand_outer="$port"
+        fi
+        
         break
     done
     
@@ -441,6 +553,7 @@ modify_config() {
     done
 
     write_config "$port" "$uuid" "$domain" "$private_key" "$public_key"
+    
     if ! restart_xray; then return; fi
 
     success "配置修改成功！"
@@ -463,7 +576,9 @@ view_subscription_info() {
     local display_ip=$ip && [[ $ip =~ ":" ]] && display_ip="[$ip]"
     local link_name="$(hostname) X-reality"
     local link_name_encoded=$(echo "$link_name" | sed 's/ /%20/g')
-    local vless_url="vless://${uuid}@${display_ip}:${port}?flow=xtls-rprx-vision&encryption=none&type=tcp&security=reality&sni=${domain}&fp=chrome&pbk=${public_key}&sid=${shortid}#${link_name_encoded}"
+    # local vless_url="vless://${uuid}@${display_ip}:${port}?flow=xtls-rprx-vision&encryption=none&type=tcp&security=reality&sni=${domain}&fp=chrome&pbk=${public_key}&sid=${shortid}#${link_name_encoded}"
+    # 修改对应rand_outer
+    local vless_url="vless://${uuid}@${display_ip}:${rand_outer}?flow=xtls-rprx-vision&encryption=none&type=tcp&security=reality&sni=${domain}&fp=chrome&pbk=${public_key}&sid=${shortid}#${link_name_encoded}"
 
     if [[ "$is_quiet" = true ]]; then
         echo "${vless_url}"
@@ -474,7 +589,8 @@ view_subscription_info() {
         echo -e "$green --- Xray VLESS-Reality 订阅信息 --- $none"
         echo -e "$yellow 名称: $cyan$link_name$none"
         echo -e "$yellow 地址: $cyan$ip$none"
-        echo -e "$yellow 端口:<-!注意开放端口!->>> $cyan$port$none "
+        # echo -e "$yellow 端口:<-!注意开放端口!->>> $cyan$port$none "
+        echo -e "$yellow 端口:inner:${yellow}${rand_inner}${none} <-!注意开放端口!-> outer:${yellow}${rand_outer}${none} ${cyan}${port}${none}"
         echo -e "$yellow UUID: $cyan$uuid$none"
         echo -e "$yellow 流控: $cyan"xtls-rprx-vision"$none"
         echo -e "$yellow 指纹: $cyan"chrome"$none"
@@ -482,14 +598,20 @@ view_subscription_info() {
         echo -e "$yellow 公钥: $cyan$public_key$none"
         echo -e "$yellow ShortId: $cyan$shortid$none"
         echo "----------------------------------------------------------------"
-        echo -e "$green 订阅链接 (已保存到 ./xray_vless_reality_link.txt): $none\n"; echo -e "$cyan${vless_url}${none}"
+        echo -e "${yellow}inner:${yellow}${rand_inner}${none} <-!注意开放端口!-> outer:${yellow}${rand_outer}${none} ${cyan}${port}${none}"
+        echo -e "${green}订阅链接 (已保存到 ./xray_vless_reality_link.txt):${none}\n"
+        echo -e "${cyan}${vless_url}${none}"
         echo "----------------------------------------------------------------"
     fi
 }
 
 # --- 核心逻辑函数 ---
 write_config() {
-    local port=$1 uuid=$2 domain=$3 private_key=$4 public_key=$5 shortid="20220701"
+    local port=$1 uuid=$2 domain=$3 private_key=$4 public_key=$5 # shortid="20220701"
+    # 升级一下shortid 生成逻辑
+    local shortid
+    shortid=$(TZ=Asia/Shanghai date +%Y%m%d)
+
     jq -n \
         --argjson port "$port" \
         --arg uuid "$uuid" \
