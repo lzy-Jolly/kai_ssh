@@ -65,7 +65,11 @@ choose_port_pair() {
     current_port="${1:-}"   # 可选参数，不传则为空
     list_file="./portslist.txt"
     [ ! -f "$list_file" ] && return 1
-
+    
+    # edit Windows \n \r diff with linux
+    sed -i 's/\r$//' "$list_file"
+    
+    
     pairs=""
     count=0
     invalid=0
