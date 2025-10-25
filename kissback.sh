@@ -23,20 +23,39 @@ MAX_PULL_TRIES=2
 # -------------------------------
 check_and_install_deps() {
     local need=()
-    for cmd in curl openssl md5sum sed grep awk tee openssh-client; do
+    for cmd in curl openssl md5sum sed grep awk tee scp; do
         command -v "$cmd" >/dev/null 2>&1 || need+=("$cmd")
     done
     [ ${#need[@]} -eq 0 ] && return 0
     
     echo "📦 缺少命令: ${need[*]}，尝试安装 / Missing commands: ${need[*]}, trying to install"
+    
+    # 检查是否需要安装scp/openssh-client
+    local need_ssh=false
+    for cmd in "${need[@]}"; do
+        if [[ "$cmd" == "scp" ]]; then
+            need_ssh=true
+            break
+        fi
+    done
+    
     if command -v apk >/dev/null; then
-        apk add --no-cache ca-certificates curl openssl coreutils sed grep awk util-linux
+        local packages="ca-certificates curl openssl coreutils sed grep awk util-linux"
+        $need_ssh && packages="$packages openssh-client"
+        apk add --no-cache $packages
     elif command -v apt-get >/dev/null; then
-        apt-get update -y && apt-get install -y curl openssl coreutils sed grep awk
+        # 在 Debian/Ubuntu 中，使用 gawk 代替 awk
+        local packages="curl openssl coreutils sed grep gawk"
+        $need_ssh && packages="$packages openssh-client"
+        apt-get update -y && apt-get install -y $packages
     elif command -v yum >/dev/null; then
-        yum install -y curl openssl coreutils sed grep gawk
+        local packages="curl openssl coreutils sed grep gawk"
+        $need_ssh && packages="$packages openssh-clients"
+        yum install -y $packages
     elif command -v dnf >/dev/null; then
-        dnf install -y curl openssl coreutils sed grep gawk
+        local packages="curl openssl coreutils sed grep gawk"
+        $need_ssh && packages="$packages openssh-clients"
+        dnf install -y $packages
     else 
         echo "❌ 请手动安装: ${need[*]} / Please install manually: ${need[*]}"; exit 1
     fi
