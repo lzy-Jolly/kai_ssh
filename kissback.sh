@@ -23,7 +23,7 @@ MAX_PULL_TRIES=2
 # -------------------------------
 check_and_install_deps() {
     local need=()
-    for cmd in curl openssl md5sum sed grep awk tee scp; do
+    for cmd in curl openssl md5sum sed grep awk tee openssh-client; do
         command -v "$cmd" >/dev/null 2>&1 || need+=("$cmd")
     done
     [ ${#need[@]} -eq 0 ] && return 0
