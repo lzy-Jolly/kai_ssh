@@ -175,13 +175,13 @@ change_pwd_login() {
     [ ! -f "kissvps.pub" ] && { echo "❌ 未找到 kissvps.pub / kissvps.pub not found"; exit 1; }
 
     echo -e "\n=== 双重确认：root 密码登录 / Double confirm root password login ==="
-    read -p "是否确认pub登录成功? (y/N): " c1; c1=${c1:-N}
+    read -p "enter y 确认pub登录成功? (y/N): " c1; c1=${c1:-N}
     if ! echo "$c1" | grep -Eiq '^y'; then
         echo "⚠️ 请先确认pub可登录 / Confirm key login first"; exit 0
     fi
 
-    read -p "是否禁用 root 密码登录? (y/N): " c2; c2=${c2:-N}
-    if ! echo "$c2" | grep -Eiq '^y'; then
+    read -p "enter N 禁用 root 密码登录 (y/N): " c2; c2=${c2:-N}
+    if ! echo "$c2" | grep -Eiq '^n'; then
         echo "ℹ️ 未修改 SSH 配置 / SSH config not modified"; return 0
     fi
 
